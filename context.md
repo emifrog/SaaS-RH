@@ -1,4 +1,4 @@
-# 🚒 Prompt Master pour Windsurf - Clone MOON.SP pour le SDIS 06
+# Prompt Master pour Windsurf
 
 ## Contexte du Projet
 
@@ -360,13 +360,7 @@ docker-compose logs -f     # Voir logs
 docker-compose down -v     # Arrêter et nettoyer
 ```
 
-## Métriques de Succès
-
-- **Temps export TTA**: < 5 minutes (vs 5 jours actuellement)
-- **Taux adoption**: > 80% après 3 mois
-- **Satisfaction**: NPS > 7/10
-- **Performance**: Temps réponse < 2s pour 95% requêtes
-- **Disponibilité**: > 99.5% uptime
+---
 
 ## Points d'Attention
 
@@ -394,10 +388,9 @@ docker-compose down -v     # Arrêter et nettoyer
 
 Utilise ce prompt dans Windsurf Cascade (Cmd+K) pour initialiser le projet :
 
-"Créer une application complète de gestion pour le SDIS 06, basée sur les spécifications ci-dessus. Commencer par :
+Créer une application complète de gestion pour le SDIS 06, basée sur les spécifications ci-dessus. Commencer par :
 1. Initialiser le monorepo avec backend Node.js/Express/TypeScript/Prisma et frontend React/TypeScript/Vite/Tailwind
 2. Configurer Docker-compose avec PostgreSQL 15 et Redis
 3. Implémenter le système d'authentification JWT avec les 4 rôles
 4. Créer le module FMPA complet avec CRUD, inscriptions, signatures électroniques et export TTA
 5. Ajouter les tests unitaires pour les fonctions critiques
-Respecter les conventions de code et la structure de projet définie."

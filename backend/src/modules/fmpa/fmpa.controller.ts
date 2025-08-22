@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { fmpaService } from './fmpa.service';
-import { HTTP_STATUS } from '../../utils/constants';
+import { prisma } from '../../server';
 import { 
   CreateSessionDTO, 
   UpdateSessionDTO, 
@@ -9,6 +9,17 @@ import {
   PresenceDTO,
   ExportTTADTO 
 } from './fmpa.validation';
+
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+};
 
 export class FMPAController {
   async createSession(req: Request, res: Response, next: NextFunction) {
@@ -129,14 +140,92 @@ export class FMPAController {
 
   async exportTTA(req: Request, res: Response, next: NextFunction) {
     try {
-      const query = req.query as unknown as ExportTTADTO;
-      const exportData = await fmpaService.exportTTA(query);
+      const { id } = req.params;
+      if (id) {
+        // Export pour une session spécifique
+        const ttaService = new (await import('./tta-export.service')).TTAExportService();
+        const buffer = await ttaService.generateTTAExport(id);
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="TTA_${id}.xlsx"`);
+        res.send(buffer);
+      } else {
+        // Export général (ancien comportement)
+        const query = req.query as unknown as ExportTTADTO;
+        const exportData = await fmpaService.exportTTA(query);
+        
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="export-tta-${query.mois}.csv"`);
+        
+        res.status(HTTP_STATUS.OK).send(exportData.csv);
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async exportMonthlyReport(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { month, year, centreId } = req.query;
+      const ttaService = new (await import('./tta-export.service')).TTAExportService();
+      const buffer = await ttaService.generateMonthlyReport(
+        Number(month),
+        Number(year),
+        centreId as string
+      );
       
-      // Set headers for CSV download
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="export-tta-${query.mois}.csv"`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="Rapport_FMPA_${month}_${year}.xlsx"`);
+      res.send(buffer);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async addSignature(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { personnelId, type, signature } = req.body;
       
-      res.status(HTTP_STATUS.OK).send(exportData.csv);
+      const result = await prisma.signatureFMPA.create({
+        data: {
+          sessionFMPAId: parseInt(id),
+          personnelId,
+          type,
+          signature,
+        },
+      });
+      
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getSignatures(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const signatures = await prisma.signatureFMPA.findMany({
+        where: { sessionFMPAId: parseInt(id) },
+        include: {
+          personnel: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true,
+              grade: true,
+            },
+          },
+        },
+      });
+      
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: signatures,
+      });
     } catch (error) {
       next(error);
     }

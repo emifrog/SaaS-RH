@@ -71,6 +71,7 @@ model Personnel {
   competences      Competence[]
   inscriptions     InscriptionFMPA[]
   sessionsFormateur SessionFMPA[]     @relation("FormateurPrincipal")
+  signatures       SignatureFMPA[]
   notifications    Notification[]
   auditLogs        AuditLog[]
 
@@ -135,6 +136,7 @@ model SessionFMPA {
   formateurPrincipal  Personnel          @relation("FormateurPrincipal", fields: [formateurPrincipalId], references: [id])
   centre              Centre             @relation(fields: [centreId], references: [id])
   inscriptions        InscriptionFMPA[]
+  signatures          SignatureFMPA[]
   exportsTTA          ExportTTA[]
 
   @@index([dateDebut])
@@ -147,6 +149,7 @@ model InscriptionFMPA {
   sessionId            Int
   personnelId          Int
   statut               StatutInscription  @default(INSCRIT)
+  present              Boolean            @default(false)
   signatureElectronique String?           // Base64
   dateSignature        DateTime?
   heuresValidees       Float?
@@ -162,6 +165,22 @@ model InscriptionFMPA {
   @@index([sessionId])
   @@index([personnelId])
   @@index([statut])
+}
+
+model SignatureFMPA {
+  id                   String             @id @default(uuid())
+  sessionFMPAId        Int
+  personnelId          Int
+  type                 String             // EMARGEMENT, FORMATEUR, etc.
+  signature            String             // Base64
+  dateSignature        DateTime           @default(now())
+  
+  // Relations
+  session              SessionFMPA        @relation(fields: [sessionFMPAId], references: [id], onDelete: Cascade)
+  personnel            Personnel          @relation(fields: [personnelId], references: [id])
+  
+  @@index([sessionFMPAId])
+  @@index([personnelId])
 }
 
 model AptitudeMedicale {

@@ -23,6 +23,14 @@ router.post('/sessions', authorize('FORMATEUR', 'CHEF_CENTRE', 'ADMIN_SDIS'), va
 router.put('/sessions/:id', authorize('FORMATEUR', 'CHEF_CENTRE', 'ADMIN_SDIS'), validate(updateSessionSchema), fmpaController.updateSession);
 router.delete('/sessions/:id', authorize('CHEF_CENTRE', 'ADMIN_SDIS'), fmpaController.deleteSession);
 
+// Routes pour les signatures
+router.post('/sessions/:id/signatures', authenticate, authorize('FORMATEUR', 'ADMIN_SDIS'), fmpaController.addSignature);
+router.get('/sessions/:id/signatures', authenticate, fmpaController.getSignatures);
+
+// Routes pour l'export TTA
+router.get('/sessions/:id/export-tta', authenticate, authorize('FORMATEUR', 'CHEF_CENTRE', 'ADMIN_SDIS'), fmpaController.exportTTA);
+router.get('/export/monthly-report', authenticate, authorize('CHEF_CENTRE', 'ADMIN_SDIS'), fmpaController.exportMonthlyReport);
+
 // Routes pour les inscriptions
 router.post('/sessions/:id/inscription', validate(inscriptionSchema), fmpaController.inscrirePersonnel);
 router.delete('/sessions/:id/inscription/:personnelId', fmpaController.desinscrirePersonnel);

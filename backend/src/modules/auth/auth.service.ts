@@ -1,16 +1,11 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../server';
-import { Personnel, Role } from '@prisma/client';
+import { Personnel } from '@prisma/client';
 import { LoginDTO, ChangePasswordDTO } from './auth.validation';
 import { AuthenticationError, NotFoundError, BusinessError } from '../../middleware/error.middleware';
 import { logger } from '../../utils/logger';
-
-interface TokenPayload {
-  userId: number;
-  matricule: string;
-  roles: Role[];
-}
+import { TokenPayload, UserRole } from '../../types/auth.types';
 
 export class AuthService {
   private readonly accessTokenSecret = process.env.JWT_ACCESS_SECRET!;
@@ -23,6 +18,14 @@ export class AuthService {
       where: { matricule: data.matricule },
       include: {
         centre: true,
+        personnelRoles: {
+          where: {
+            dateFin: null
+          },
+          include: {
+            role: true
+          }
+        }
       },
     });
 
@@ -39,10 +42,16 @@ export class AuthService {
       throw new AuthenticationError('Matricule ou mot de passe incorrect');
     }
 
+    const userRoles: UserRole[] = user.personnelRoles.map(pr => ({
+      code: pr.role.code,
+      libelle: pr.role.libelle,
+      permissions: pr.role.permissions
+    }));
+
     const tokens = this.generateTokens({
       userId: user.id,
       matricule: user.matricule,
-      roles: user.roles,
+      roles: userRoles,
     });
 
     // Save refresh token

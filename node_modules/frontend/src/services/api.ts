@@ -1,7 +1,6 @@
 import axios from 'axios';
-import { store } from '@/store';
-import { refreshAccessToken } from '@/store/slices/authSlice';
 import toast from 'react-hot-toast';
+import { getAccessToken, getRefreshToken } from '@/utils/tokenService';
 
 export const api = axios.create({
   baseURL: '/api',
@@ -13,7 +12,7 @@ export const api = axios.create({
 // Request interceptor pour ajouter le token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -34,18 +33,14 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = getRefreshToken();
         if (refreshToken) {
-          await store.dispatch(refreshAccessToken(refreshToken));
-          const newToken = localStorage.getItem('accessToken');
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return api(originalRequest);
+          // We'll handle this in the auth slice
+          window.dispatchEvent(new Event('unauthorized'));
         }
       } catch (refreshError) {
-        // Rediriger vers login si le refresh échoue
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        // Clear tokens and redirect to login
+        window.dispatchEvent(new Event('logout'));
         return Promise.reject(refreshError);
       }
     }

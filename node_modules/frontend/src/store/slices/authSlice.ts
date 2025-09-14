@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
 import { api } from '@/services/api';
+import { getRefreshToken, setTokens, clearTokens } from '@/utils/tokenService';
 
 interface User {
   id: string;
@@ -39,9 +39,19 @@ export const login = createAsyncThunk(
 
 export const refreshAccessToken = createAsyncThunk(
   'auth/refresh',
-  async (refreshToken: string) => {
-    const response = await api.post('/auth/refresh', { refreshToken });
-    return response.data;
+  async (_, { rejectWithValue }) => {
+    try {
+      const refreshToken = getRefreshToken();
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+      const response = await api.post('/auth/refresh', { refreshToken });
+      return response.data;
+    } catch (error) {
+      // Clear tokens on refresh failure
+      clearTokens();
+      return rejectWithValue('Session expired. Please log in again.');
+    }
   }
 );
 
@@ -65,9 +75,8 @@ const authSlice = createSlice({
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers(builder) {
     builder
-      // Login
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -77,29 +86,28 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
-        localStorage.setItem('accessToken', action.payload.accessToken);
-        localStorage.setItem('refreshToken', action.payload.refreshToken);
+        setTokens(action.payload.accessToken, action.payload.refreshToken);
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error.message || 'Erreur de connexion';
+        state.error = action.error.message || 'Login failed';
       })
-      // Refresh
       .addCase(refreshAccessToken.fulfilled, (state, action) => {
         state.accessToken = action.payload.accessToken;
-        localStorage.setItem('accessToken', action.payload.accessToken);
+        state.refreshToken = action.payload.refreshToken;
+        setTokens(action.payload.accessToken, action.payload.refreshToken);
       })
-      // Logout
+      .addCase(refreshAccessToken.rejected, (state) => {
+        state.user = null;
+        state.accessToken = null;
+        state.refreshToken = null;
+        clearTokens();
+      })
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
         state.accessToken = null;
         state.refreshToken = null;
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-      })
-      // Get current user
-      .addCase(getCurrentUser.fulfilled, (state, action) => {
-        state.user = action.payload;
+        clearTokens();
       });
   },
 });

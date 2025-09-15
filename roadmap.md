@@ -6,8 +6,6 @@
 
 #### Sécuriser le projet
 - [ ] Retirer backend/.env du tracking Git
-- [ ] Régénérer toutes les clés API exposées
-- [ ] Créer .env.example avec valeurs fictives
 - [ ] Ajouter .env dans .gitignore
 
 ---

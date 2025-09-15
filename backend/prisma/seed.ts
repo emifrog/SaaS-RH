@@ -13,7 +13,9 @@ async function main() {
         code: 'CIS_NICE',
         nom: 'CIS Nice',
         type: 'CIS',
-        adresse: '1 Avenue de la République, 06000 Nice',
+        adresse: '1 Avenue de la République',
+        ville: 'Nice',
+        codePostal: '06000',
         telephone: '0493000001',
         email: 'cis.nice@sdis06.fr',
       },
@@ -23,7 +25,9 @@ async function main() {
         code: 'CSP_ANTIBES',
         nom: 'CSP Antibes',
         type: 'CSP',
-        adresse: '10 Boulevard Wilson, 06600 Antibes',
+        adresse: '10 Boulevard Wilson',
+        ville: 'Antibes',
+        codePostal: '06600',
         telephone: '0493000002',
         email: 'csp.antibes@sdis06.fr',
       },
@@ -33,7 +37,9 @@ async function main() {
         code: 'CPI_GRASSE',
         nom: 'CPI Grasse',
         type: 'CPI',
-        adresse: '5 Rue du Commandant, 06130 Grasse',
+        adresse: '5 Rue du Commandant',
+        ville: 'Grasse',
+        codePostal: '06130',
         telephone: '0493000003',
         email: 'cpi.grasse@sdis06.fr',
       },
@@ -49,7 +55,6 @@ async function main() {
         code: 'FMPA_SAP',
         libelle: 'FMPA Secours à Personne',
         dureeHeures: 7.5,
-        tauxHoraire: 12.50,
         description: 'Formation de maintien des acquis en secours à personne',
       },
     }),
@@ -58,7 +63,6 @@ async function main() {
         code: 'FMPA_INC',
         libelle: 'FMPA Incendie',
         dureeHeures: 4,
-        tauxHoraire: 15.00,
         description: 'Formation de maintien des acquis incendie',
       },
     }),
@@ -67,7 +71,6 @@ async function main() {
         code: 'FMPA_DIV',
         libelle: 'FMPA Opérations Diverses',
         dureeHeures: 3.5,
-        tauxHoraire: 12.50,
         description: 'Formation de maintien des acquis opérations diverses',
       },
     }),
@@ -91,14 +94,6 @@ async function main() {
       categorie: 'SPP',
       statut: 'ACTIF',
       dateEntree: new Date(),
-      aptitudeMedicale: {
-        create: {
-          statut: 'APTE',
-          dateVisite: new Date('2024-01-15'),
-          dateProchainExamen: new Date('2025-01-15'),
-          medecin: 'Dr. Martin',
-        },
-      },
     },
   });
 
@@ -115,14 +110,6 @@ async function main() {
       categorie: 'SPP',
       statut: 'ACTIF',
       dateEntree: new Date(),
-      aptitudeMedicale: {
-        create: {
-          statut: 'APTE',
-          dateVisite: new Date('2024-02-10'),
-          dateProchainExamen: new Date('2025-02-10'),
-          medecin: 'Dr. Dubois',
-        },
-      },
     },
   });
 
@@ -139,34 +126,6 @@ async function main() {
       categorie: 'SPP',
       statut: 'ACTIF',
       dateEntree: new Date(),
-      aptitudeMedicale: {
-        create: {
-          statut: 'APTE',
-          dateVisite: new Date('2024-03-05'),
-          dateProchainExamen: new Date('2025-03-05'),
-          medecin: 'Dr. Leroy',
-        },
-      },
-      competences: {
-        create: [
-          {
-            code: 'FOR_SAP',
-            libelle: 'Formateur SAP',
-            dateObtention: new Date('2020-06-15'),
-            dateExpiration: new Date('2025-06-15'),
-            niveau: 'Formateur',
-            organisme: 'ENSOSP',
-          },
-          {
-            code: 'FOR_INC',
-            libelle: 'Formateur Incendie',
-            dateObtention: new Date('2019-09-20'),
-            dateExpiration: new Date('2024-09-20'),
-            niveau: 'Formateur',
-            organisme: 'ENSOSP',
-          },
-        ],
-      },
     },
   });
 
@@ -184,26 +143,6 @@ async function main() {
         categorie: 'SPV',
         statut: 'ACTIF',
         dateEntree: new Date(),
-        aptitudeMedicale: {
-          create: {
-            statut: 'APTE',
-            dateVisite: new Date('2024-04-01'),
-            dateProchainExamen: new Date('2025-04-01'),
-            medecin: 'Dr. Petit',
-          },
-        },
-        competences: {
-          create: [
-            {
-              code: 'PSE2',
-              libelle: 'Premiers Secours en Équipe niveau 2',
-              dateObtention: new Date('2022-05-10'),
-              dateExpiration: new Date('2025-05-10'),
-              niveau: '2',
-              organisme: 'SDIS 06',
-            },
-          ],
-        },
       },
     }),
     prisma.personnel.create({
@@ -218,14 +157,6 @@ async function main() {
         categorie: 'SPV',
         statut: 'ACTIF',
         dateEntree: new Date(),
-        aptitudeMedicale: {
-          create: {
-            statut: 'APTE',
-            dateVisite: new Date('2024-05-15'),
-            dateProchainExamen: new Date('2025-05-15'),
-            medecin: 'Dr. Blanc',
-          },
-        },
       },
     }),
     prisma.personnel.create({
@@ -240,14 +171,6 @@ async function main() {
         categorie: 'SPV',
         statut: 'ACTIF',
         dateEntree: new Date(),
-        aptitudeMedicale: {
-          create: {
-            statut: 'APTE',
-            dateVisite: new Date('2024-06-20'),
-            dateProchainExamen: new Date('2025-06-20'),
-            medecin: 'Dr. Roux',
-          },
-        },
       },
     }),
   ]);
@@ -265,13 +188,13 @@ async function main() {
         dateDebut: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 10, 8, 0),
         dateFin: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 10, 17, 30),
         lieu: 'CIS Nice - Salle de formation',
-        placesMax: 12,
+        nombrePlacesMax: 12,
         formateurPrincipalId: formateur.id,
         centreId: centres[0].id,
         statut: 'PLANIFIE',
         codeTTA: 'FMPA_SAP_2024',
         tauxHoraire: 12.50,
-        observations: 'Apporter sa tenue de sport',
+        commentaires: 'Apporter sa tenue de sport',
       },
     }),
     prisma.sessionFMPA.create({
@@ -280,7 +203,7 @@ async function main() {
         dateDebut: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 15, 14, 0),
         dateFin: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 15, 18, 0),
         lieu: 'CSP Antibes - Plateau technique',
-        placesMax: 10,
+        nombrePlacesMax: 10,
         formateurPrincipalId: formateur.id,
         centreId: centres[1].id,
         statut: 'CONFIRME',
@@ -295,23 +218,23 @@ async function main() {
   // Créer quelques inscriptions
   await prisma.inscriptionFMPA.create({
     data: {
-      sessionId: sessions[0].id,
+      sessionFMPAId: sessions[0].id,
       personnelId: spvs[0].id,
-      statut: 'INSCRIT',
+      statutInscription: 'INSCRIT',
     },
   });
 
   await prisma.inscriptionFMPA.create({
     data: {
-      sessionId: sessions[0].id,
+      sessionFMPAId: sessions[0].id,
       personnelId: spvs[2].id,
-      statut: 'INSCRIT',
+      statutInscription: 'INSCRIT',
     },
   });
 
   await prisma.sessionFMPA.update({
     where: { id: sessions[0].id },
-    data: { placesOccupees: 2 },
+    data: { nombreInscrits: 2 },
   });
 
   console.log('✅ Inscriptions créées');

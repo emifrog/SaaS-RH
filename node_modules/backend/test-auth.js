@@ -15,35 +15,32 @@ async function testAuthentication() {
     });
     
     console.log('✅ Connexion réussie !');
-    console.log('   Token reçu:', loginResponse.data.accessToken ? 'Oui' : 'Non');
-    console.log('   Utilisateur:', loginResponse.data.user?.nom, loginResponse.data.user?.prenom);
-    console.log('   Rôles:', loginResponse.data.user?.roles?.map(r => r.nom).join(', ') || 'Aucun');
+    console.log('   Token reçu:', loginResponse.data.data.accessToken ? 'Oui' : 'Non');
+    console.log('   Utilisateur:', loginResponse.data.data.user?.nom, loginResponse.data.data.user?.prenom);
+    console.log('   Rôles:', loginResponse.data.data.user?.roles?.map(r => r.nom).join(', ') || 'Aucun');
     
-    const token = loginResponse.data.accessToken;
+    const token = loginResponse.data.data.accessToken;
     
-    // Test de validation du token
-    console.log('\n2️⃣ Test de validation du token...');
-    const validateResponse = await axios.post(`${API_BASE_URL}/auth/validate`, {}, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    console.log('✅ Token valide !');
-    console.log('   Utilisateur validé:', validateResponse.data.user?.nom, validateResponse.data.user?.prenom);
-    
-    // Test d'accès à une route protégée (exemple)
-    console.log('\n3️⃣ Test d\'accès aux données utilisateur...');
+    // Test d'accès aux données utilisateur (remplace le test de validation)
+    console.log('\n2️⃣ Test d\'accès aux données utilisateur...');
     const userResponse = await axios.get(`${API_BASE_URL}/auth/me`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
     
-    console.log('✅ Accès aux données utilisateur réussi !');
+    console.log('✅ Token valide et accès aux données réussi !');
     console.log('   Matricule:', userResponse.data.matricule);
-    console.log('   Email:', userResponse.data.email);
-    console.log('   Centre:', userResponse.data.centre?.nom || 'Non assigné');
+    console.log('   Rôles:', userResponse.data.roles?.map(r => r.code).join(', ') || 'Aucun');
+    
+    // Test de refresh token
+    console.log('\n3️⃣ Test de refresh token...');
+    const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+      refreshToken: loginResponse.data.data.refreshToken
+    });
+    
+    console.log('✅ Refresh token réussi !');
+    console.log('   Nouveau token reçu:', refreshResponse.data.data.accessToken ? 'Oui' : 'Non');
     
     console.log('\n🎉 Tous les tests d\'authentification ont réussi !');
     

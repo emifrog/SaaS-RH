@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../server';
 import { AuthenticationError, AuthorizationError } from './error.middleware';
-import { UserStatus } from '@prisma/client';
+import { StatutPersonnel } from '@prisma/client';
 import { authService } from '../modules/auth/auth.service';
 
 declare global {
@@ -38,29 +38,28 @@ export const authenticate = async (
     const user = await prisma.personnel.findUnique({
       where: { 
         id: userId,
-        status: UserStatus.ACTIVE,
       },
       include: {
         personnelRoles: {
-          where: { dateFin: null },
           include: { role: true }
         }
       },
     });
 
-    if (!user) {
+    if (!user || user.statut !== StatutPersonnel.ACTIF) {
       throw new AuthenticationError('Utilisateur inactif ou inexistant');
     }
 
+
     // Extract roles and permissions
-    const roles = user.personnelRoles.map(pr => pr.role.code);
+    const roles = user.personnelRoles?.map(pr => pr.role.code) || [];
     const permissions = Array.from(
       new Set(
-        user.personnelRoles.flatMap(pr => 
+        user.personnelRoles?.flatMap(pr => 
           Array.isArray(pr.role.permissions) 
             ? pr.role.permissions.map((p: any) => p.code || p)
             : []
-        )
+        ) || []
       )
     ) as string[];
 
@@ -78,7 +77,7 @@ export const authenticate = async (
 };
 
 export const authorize = (...requiredPermissions: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AuthenticationError('Non authentifié'));
     }
@@ -96,7 +95,7 @@ export const authorize = (...requiredPermissions: string[]) => {
 };
 
 export const hasRole = (...requiredRoles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AuthenticationError('Non authentifié'));
     }
@@ -117,7 +116,7 @@ export const authorizeOwnerOrPermissions = (
   ownerField: string, 
   ...requiredPermissions: string[]
 ) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AuthenticationError('Non authentifié'));
     }

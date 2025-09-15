@@ -29,6 +29,8 @@ interface FMPAState {
   currentSession: SessionFMPA | null;
   typesFMPA: TypeFMPA[];
   isLoading: boolean;
+  isExporting: boolean;
+  exportError: string | null;
   error: string | null;
 }
 
@@ -37,6 +39,8 @@ const initialState: FMPAState = {
   currentSession: null,
   typesFMPA: [],
   isLoading: false,
+  isExporting: false,
+  exportError: null,
   error: null,
 };
 
@@ -89,12 +93,19 @@ export const inscribeToSession = createAsyncThunk(
 
 export const exportTTA = createAsyncThunk(
   'fmpa/exportTTA',
-  async ({ startDate, endDate }: { startDate: string; endDate: string }) => {
-    const response = await api.get('/fmpa/export/tta', {
-      params: { startDate, endDate },
-      responseType: 'blob',
-    });
-    return response.data;
+  async ({ startDate, endDate }: { startDate: string; endDate: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/fmpa/export/tta', {
+        params: { startDate, endDate },
+        responseType: 'blob',
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue('Une erreur est survenue lors de la génération de l\'export');
+    }
   }
 );
 
@@ -104,6 +115,10 @@ const fmpaSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null;
+      state.exportError = null;
+    },
+    clearExportError: (state) => {
+      state.exportError = null;
     },
   },
   extraReducers: (builder) => {
@@ -142,9 +157,21 @@ const fmpaSlice = createSlice({
       // Delete session
       .addCase(deleteSession.fulfilled, (state, action) => {
         state.sessions = state.sessions.filter(s => s.id !== action.payload);
+      })
+      // Export TTA
+      .addCase(exportTTA.pending, (state) => {
+        state.isExporting = true;
+        state.exportError = null;
+      })
+      .addCase(exportTTA.fulfilled, (state) => {
+        state.isExporting = false;
+      })
+      .addCase(exportTTA.rejected, (state, action) => {
+        state.isExporting = false;
+        state.exportError = action.payload as string || 'Erreur lors de la génération de l\'export';
       });
   },
 });
 
-export const { clearError } = fmpaSlice.actions;
+export const { clearError, clearExportError } = fmpaSlice.actions;
 export default fmpaSlice.reducer;

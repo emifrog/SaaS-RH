@@ -7,9 +7,498 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =====================================================
-// ENUMS
-// =====================================================
+model Grade {
+  id                Int         @id @default(autoincrement())
+  code              String      @unique
+  libelle           String
+  categorie         Categorie
+  ordreHierarchique Int
+  actif             Boolean     @default(true)
+  personnels        Personnel[]
+
+  @@index([code])
+}
+
+model Centre {
+  id         Int           @id @default(autoincrement())
+  code       String        @unique
+  nom        String
+  type       TypeCentre
+  adresse    String?
+  ville      String?
+  codePostal String?
+  telephone  String?
+  email      String?
+  actif      Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  evenements Evenement[]
+  exportsTTA ExportTTA[]
+  materiels  Materiel[]
+  personnels Personnel[]
+  sessions   SessionFMPA[]
+
+  @@index([code])
+}
+
+model Personnel {
+  id                       Int                       @id @default(autoincrement())
+  matricule                String                    @unique
+  nom                      String
+  prenom                   String
+  dateNaissance            DateTime?
+  sexe                     Sexe?
+  email                    String                    @unique
+  telephone                String?
+  adresse                  String?
+  codePostal               String?
+  ville                    String?
+  password                 String
+  refreshToken             String?
+  resetPasswordToken       String?
+  resetPasswordExpires     DateTime?
+  dateEntree               DateTime
+  dateSortie               DateTime?
+  statut                   StatutPersonnel           @default(ACTIF)
+  categorie                Categorie?
+  gradeId                  Int?
+  centreId                 Int?
+  aptitudesMedicales       AptitudeMedicale[]
+  auditLogs                AuditLog[]
+  conversationsCreees      Conversation[]
+  participations           ConversationParticipant[]
+  epi                      EPI[]
+  evenementsCreees         Evenement[]
+  participationsEvenements EvenementParticipant[]
+  exportsTTAGeneres        ExportTTA[]               @relation("GenerePar")
+  exportsTTAValides        ExportTTA[]               @relation("ValidePar")
+  incidentsSignales        IncidentMateriel[]        @relation("SignalePar")
+  incidentsTraites         IncidentMateriel[]        @relation("TraitePar")
+  inscriptionsFMPA         InscriptionFMPA[]
+  materielsResponsable     Materiel[]
+  messagesEnvoyes          Message[]
+  messagesLus              MessageLu[]
+  notifications            Notification[]
+  centre                   Centre?                   @relation(fields: [centreId], references: [id])
+  grade                    Grade?                    @relation(fields: [gradeId], references: [id])
+  competences              PersonnelCompetence[]
+  personnelRoles           PersonnelRole[]
+  sessionsFMPAFormateur    SessionFMPA[]             @relation("FormateurPrincipal")
+  sessionsFMPAAdditionnels SessionFMPAFormateur[]
+  signaturesFMPA           SignatureFMPA[]
+
+  @@index([matricule])
+  @@index([email])
+  @@index([centreId])
+  @@index([gradeId])
+  @@index([statut])
+}
+
+model Role {
+  id          Int             @id @default(autoincrement())
+  code        String          @unique
+  libelle     String
+  description String?
+  permissions Json            @default("[]")
+  actif       Boolean         @default(true)
+  personnels  PersonnelRole[]
+}
+
+model PersonnelRole {
+  personnelId     Int
+  roleId          Int
+  dateAttribution DateTime  @default(now())
+  dateFin         DateTime?
+  personnel       Personnel @relation(fields: [personnelId], references: [id])
+  role            Role      @relation(fields: [roleId], references: [id])
+
+  @@id([personnelId, roleId])
+}
+
+model TypeCompetence {
+  id                Int                   @id @default(autoincrement())
+  code              String                @unique
+  libelle           String
+  description       String?
+  dureeValiditeMois Int?
+  actif             Boolean               @default(true)
+  competences       PersonnelCompetence[]
+}
+
+model PersonnelCompetence {
+  id                  Int            @id @default(autoincrement())
+  personnelId         Int
+  typeCompetenceId    Int
+  dateObtention       DateTime
+  dateExpiration      DateTime?
+  niveau              String?
+  numeroDiplome       String?
+  organismeDelivrance String?
+  actif               Boolean        @default(true)
+  createdAt           DateTime       @default(now())
+  personnel           Personnel      @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  typeCompetence      TypeCompetence @relation(fields: [typeCompetenceId], references: [id])
+
+  @@unique([personnelId, typeCompetenceId, dateObtention])
+  @@index([dateExpiration])
+}
+
+model AptitudeMedicale {
+  id                  Int            @id @default(autoincrement())
+  personnelId         Int
+  dateVisite          DateTime
+  dateProchaineVisite DateTime?
+  aptitude            StatutAptitude
+  restrictions        String?
+  medecin             String?
+  commentaires        String?
+  createdAt           DateTime       @default(now())
+  personnel           Personnel      @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+
+  @@index([personnelId])
+  @@index([dateProchaineVisite])
+}
+
+model TypeFMPA {
+  id              Int           @id @default(autoincrement())
+  code            String        @unique
+  libelle         String
+  dureeHeures     Float
+  obligatoire     Boolean       @default(false)
+  periodiciteMois Int?
+  description     String?
+  actif           Boolean       @default(true)
+  sessions        SessionFMPA[]
+
+  @@index([code])
+}
+
+model SessionFMPA {
+  id                     Int                    @id @default(autoincrement())
+  typeFMPAId             Int
+  centreId               Int?
+  dateDebut              DateTime
+  dateFin                DateTime
+  lieu                   String?
+  nombrePlacesMax        Int?
+  nombreInscrits         Int                    @default(0)
+  formateurPrincipalId   Int
+  statut                 StatutSession          @default(PLANIFIE)
+  codeTTA                String?
+  tauxHoraire            Float?
+  commentaires           String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  exportsTTA             ExportTTA[]
+  inscriptions           InscriptionFMPA[]
+  centre                 Centre?                @relation(fields: [centreId], references: [id])
+  formateurPrincipal     Personnel              @relation("FormateurPrincipal", fields: [formateurPrincipalId], references: [id])
+  typeFMPA               TypeFMPA               @relation(fields: [typeFMPAId], references: [id])
+  formateursAdditionnels SessionFMPAFormateur[]
+  signatures             SignatureFMPA[]
+
+  @@index([dateDebut, dateFin])
+  @@index([centreId])
+  @@index([statut])
+}
+
+model SessionFMPAFormateur {
+  sessionId   Int
+  personnelId Int
+  personnel   Personnel   @relation(fields: [personnelId], references: [id])
+  session     SessionFMPA @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, personnelId])
+}
+
+model InscriptionFMPA {
+  id                    Int               @id @default(autoincrement())
+  sessionFMPAId         Int
+  personnelId           Int
+  dateInscription       DateTime          @default(now())
+  statutInscription     StatutInscription @default(INSCRIT)
+  heureArrivee          DateTime?
+  heureDepart           DateTime?
+  signatureElectronique String?
+  dateSignature         DateTime?
+  noteEvaluation        Float?
+  acquis                Boolean?
+  commentaireFormateur  String?
+  heuresValidees        Float?
+  montantTTA            Float?
+  exportePaie           Boolean           @default(false)
+  dateExportPaie        DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  personnel             Personnel         @relation(fields: [personnelId], references: [id])
+  session               SessionFMPA       @relation(fields: [sessionFMPAId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionFMPAId, personnelId])
+  @@index([personnelId])
+  @@index([statutInscription])
+}
+
+model SignatureFMPA {
+  id            String      @id @default(uuid())
+  sessionFMPAId Int
+  personnelId   Int
+  type          String
+  signature     String
+  dateSignature DateTime    @default(now())
+  personnel     Personnel   @relation(fields: [personnelId], references: [id])
+  session       SessionFMPA @relation(fields: [sessionFMPAId], references: [id], onDelete: Cascade)
+
+  @@index([sessionFMPAId])
+  @@index([personnelId])
+}
+
+model CategorieMateriel {
+  id          Int        @id @default(autoincrement())
+  code        String     @unique
+  libelle     String
+  description String?
+  actif       Boolean    @default(true)
+  materiels   Materiel[]
+}
+
+model Materiel {
+  id                       Int                @id @default(autoincrement())
+  categorieId              Int
+  centreId                 Int?
+  codeInventaire           String             @unique
+  libelle                  String
+  marque                   String?
+  modele                   String?
+  numeroSerie              String?
+  dateAcquisition          DateTime?
+  dateMiseService          DateTime?
+  dateReforme              DateTime?
+  etat                     EtatMateriel       @default(OPERATIONNEL)
+  periodiciteControleJours Int?
+  dateDernierControle      DateTime?
+  dateProchainControle     DateTime?
+  localisation             String?
+  responsableId            Int?
+  valeurAchat              Float?
+  fournisseur              String?
+  numeroMarche             String?
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+  incidents                IncidentMateriel[]
+  categorie                CategorieMateriel  @relation(fields: [categorieId], references: [id])
+  centre                   Centre?            @relation(fields: [centreId], references: [id])
+  responsable              Personnel?         @relation(fields: [responsableId], references: [id])
+
+  @@index([centreId])
+  @@index([etat])
+  @@index([dateProchainControle])
+}
+
+model IncidentMateriel {
+  id                 Int             @id @default(autoincrement())
+  materielId         Int
+  signaleParId       Int
+  dateIncident       DateTime        @default(now())
+  typeIncident       TypeIncident
+  gravite            GraviteIncident
+  description        String
+  photosUrls         String[]
+  statut             StatutIncident  @default(SIGNALE)
+  traiteParId        Int?
+  dateResolution     DateTime?
+  actionsCorrectives String?
+  coutReparation     Float?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  materiel           Materiel        @relation(fields: [materielId], references: [id], onDelete: Cascade)
+  signalePar         Personnel       @relation("SignalePar", fields: [signaleParId], references: [id])
+  traitePar          Personnel?      @relation("TraitePar", fields: [traiteParId], references: [id])
+
+  @@index([materielId])
+  @@index([statut])
+}
+
+model EPI {
+  id                   Int       @id @default(autoincrement())
+  personnelId          Int
+  typeEPI              String
+  taille               String?
+  numeroSerie          String?
+  dateAttribution      DateTime
+  datePeremption       DateTime?
+  etat                 EtatEPI   @default(NEUF)
+  dateDernierControle  DateTime?
+  dateProchainControle DateTime?
+  actif                Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  personnel            Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+
+  @@index([personnelId])
+  @@index([dateProchainControle])
+}
+
+model Conversation {
+  id           Int                       @id @default(autoincrement())
+  type         TypeConversation
+  nom          String?
+  createdById  Int
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  createdBy    Personnel                 @relation(fields: [createdById], references: [id])
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  conversationId       Int
+  personnelId          Int
+  dateAjout            DateTime         @default(now())
+  dateSortie           DateTime?
+  role                 RoleConversation @default(MEMBRE)
+  notificationsActives Boolean          @default(true)
+  conversation         Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  personnel            Personnel        @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, personnelId])
+}
+
+model Message {
+  id                  Int          @id @default(autoincrement())
+  conversationId      Int
+  expediteurId        Int
+  contenu             String
+  typeMessage         TypeMessage  @default(TEXTE)
+  fichierUrl          String?
+  typeInteractif      String?
+  donneesInteractives Json?
+  createdAt           DateTime     @default(now())
+  editedAt            DateTime?
+  deletedAt           DateTime?
+  conversation        Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  expediteur          Personnel    @relation(fields: [expediteurId], references: [id])
+  messagesLus         MessageLu[]
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+model MessageLu {
+  messageId   Int
+  personnelId Int
+  dateLecture DateTime  @default(now())
+  message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  personnel   Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, personnelId])
+}
+
+model Notification {
+  id                     Int                @id @default(autoincrement())
+  destinataireId         Int
+  typeNotification       String
+  titre                  String
+  message                String
+  niveau                 NiveauNotification @default(INFO)
+  entiteType             String?
+  entiteId               Int?
+  donneesSupplementaires Json?
+  lue                    Boolean            @default(false)
+  dateLecture            DateTime?
+  envoyeePush            Boolean            @default(false)
+  envoyeeEmail           Boolean            @default(false)
+  createdAt              DateTime           @default(now())
+  expiresAt              DateTime?
+  destinataire           Personnel          @relation(fields: [destinataireId], references: [id], onDelete: Cascade)
+
+  @@index([destinataireId, lue])
+  @@index([createdAt])
+}
+
+model Evenement {
+  id                Int                    @id @default(autoincrement())
+  createurId        Int
+  centreId          Int?
+  titre             String
+  description       String?
+  lieu              String?
+  dateDebut         DateTime
+  dateFin           DateTime
+  journeeEntiere    Boolean                @default(false)
+  typeEvenement     String?
+  visibilite        VisibiliteEvenement    @default(PUBLIC)
+  recurrent         Boolean                @default(false)
+  patternRecurrence Json?
+  couleur           String?
+  rappels           Json                   @default("[]")
+  annule            Boolean                @default(false)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  centre            Centre?                @relation(fields: [centreId], references: [id])
+  createur          Personnel              @relation(fields: [createurId], references: [id])
+  participants      EvenementParticipant[]
+
+  @@index([dateDebut, dateFin])
+  @@index([centreId])
+}
+
+model EvenementParticipant {
+  evenementId      Int
+  personnelId      Int
+  statutInvitation StatutInvitation @default(INVITE)
+  obligatoire      Boolean          @default(false)
+  dateReponse      DateTime?
+  commentaire      String?
+  evenement        Evenement        @relation(fields: [evenementId], references: [id], onDelete: Cascade)
+  personnel        Personnel        @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+
+  @@id([evenementId, personnelId])
+}
+
+model ExportTTA {
+  id               Int          @id @default(autoincrement())
+  periodeDebut     DateTime
+  periodeFin       DateTime
+  centreId         Int?
+  genereParId      Int
+  dateGeneration   DateTime     @default(now())
+  nombreLignes     Int?
+  montantTotal     Float?
+  fichierUrl       String?
+  formatExport     FormatExport
+  statut           StatutExport @default(GENERE)
+  dateValidation   DateTime?
+  valideParId      Int?
+  dateTransmission DateTime?
+  numeroBordereau  String?
+  commentaires     String?
+  sessionId        Int?
+  centre           Centre?      @relation(fields: [centreId], references: [id])
+  generePar        Personnel    @relation("GenerePar", fields: [genereParId], references: [id])
+  session          SessionFMPA? @relation(fields: [sessionId], references: [id])
+  validePar        Personnel?   @relation("ValidePar", fields: [valideParId], references: [id])
+
+  @@index([periodeDebut, periodeFin])
+  @@index([centreId])
+}
+
+model AuditLog {
+  id               String     @id @default(uuid())
+  utilisateurId    Int?
+  action           String
+  entiteType       String
+  entiteId         Int?
+  anciennesValeurs Json?
+  nouvellesValeurs Json?
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime   @default(now())
+  utilisateur      Personnel? @relation(fields: [utilisateurId], references: [id])
+
+  @@index([utilisateurId])
+  @@index([entiteType, entiteId])
+  @@index([createdAt])
+}
 
 enum Categorie {
   SPV
@@ -149,603 +638,4 @@ enum FormatExport {
   CSV
   EXCEL
   TXT
-}
-
-// =====================================================
-// DOMAINE: GESTION DES PERSONNELS
-// =====================================================
-
-model Grade {
-  id                Int         @id @default(autoincrement())
-  code              String      @unique
-  libelle           String
-  categorie         Categorie
-  ordreHierarchique Int
-  actif             Boolean     @default(true)
-  
-  // Relations
-  personnels        Personnel[]
-  
-  @@index([code])
-}
-
-model Centre {
-  id          Int         @id @default(autoincrement())
-  code        String      @unique
-  nom         String
-  type        TypeCentre
-  adresse     String?
-  ville       String?
-  codePostal  String?
-  telephone   String?
-  email       String?
-  actif       Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  // Relations
-  personnels  Personnel[]
-  sessions    SessionFMPA[]
-  materiels   Materiel[]
-  evenements  Evenement[]
-  exportsTTA  ExportTTA[]
-
-  @@index([code])
-}
-
-model Personnel {
-  id                    Int                    @id @default(autoincrement())
-  matricule             String                 @unique
-  nom                   String
-  prenom                String
-  dateNaissance         DateTime?
-  sexe                  Sexe?
-  email                 String?                @unique
-  telephoneMobile       String?
-  telephoneFixe         String?
-  adresse               String?
-  ville                 String?
-  codePostal            String?
-  
-  // Relations
-  centreId              Int?
-  gradeId               Int?
-  
-  // Statut
-  categorie             Categorie
-  dateEngagement        DateTime?
-  dateFinEngagement     DateTime?
-  statut                StatutPersonnel        @default(ACTIF)
-  
-  // Authentification
-  password              String
-  refreshToken          String?
-  lastLogin             DateTime?
-  resetToken            String?
-  resetTokenExpires     DateTime?
-  
-  // Métadonnées
-  photoUrl              String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  deletedAt             DateTime?
-  
-  // Relations
-  centre                Centre?                @relation(fields: [centreId], references: [id])
-  grade                 Grade?                 @relation(fields: [gradeId], references: [id])
-  personnelRoles        PersonnelRole[]
-  competences           PersonnelCompetence[]
-  aptitudesMedicales    AptitudeMedicale[]
-  inscriptionsFMPA      InscriptionFMPA[]
-  sessionsFMPAFormateur SessionFMPA[]          @relation("FormateurPrincipal")
-  sessionsFMPAAdditionnels SessionFMPAFormateur[]
-  signaturesFMPA        SignatureFMPA[]
-  epi                   EPI[]
-  materielsResponsable  Materiel[]
-  incidentsSignales     IncidentMateriel[]     @relation("SignalePar")
-  incidentsTraites      IncidentMateriel[]     @relation("TraitePar")
-  conversationsCreees   Conversation[]
-  participations        ConversationParticipant[]
-  messagesEnvoyes       Message[]
-  messagesLus           MessageLu[]
-  notifications         Notification[]
-  evenementsCreees      Evenement[]
-  participationsEvenements EvenementParticipant[]
-  exportsTTAGeneres     ExportTTA[]            @relation("GenerePar")
-  exportsTTAValides     ExportTTA[]            @relation("ValidePar")
-  auditLogs             AuditLog[]
-
-  @@index([matricule])
-  @@index([email])
-  @@index([centreId])
-  @@index([gradeId])
-  @@index([statut])
-}
-
-model Role {
-  id          Int             @id @default(autoincrement())
-  code        String          @unique
-  libelle     String
-  description String?
-  permissions Json            @default("[]")
-  actif       Boolean         @default(true)
-  
-  // Relations
-  personnels  PersonnelRole[]
-}
-
-model PersonnelRole {
-  personnelId     Int
-  roleId          Int
-  dateAttribution DateTime  @default(now())
-  dateFin         DateTime?
-  
-  // Relations
-  personnel       Personnel @relation(fields: [personnelId], references: [id])
-  role            Role      @relation(fields: [roleId], references: [id])
-  
-  @@id([personnelId, roleId])
-}
-
-// =====================================================
-// DOMAINE: COMPÉTENCES ET APTITUDES
-// =====================================================
-
-model TypeCompetence {
-  id                Int                   @id @default(autoincrement())
-  code              String                @unique
-  libelle           String
-  description       String?
-  dureeValiditeMois Int?                  // NULL si pas d'expiration
-  actif             Boolean               @default(true)
-  
-  // Relations
-  competences       PersonnelCompetence[]
-}
-
-model PersonnelCompetence {
-  id                   Int            @id @default(autoincrement())
-  personnelId          Int
-  typeCompetenceId     Int
-  dateObtention        DateTime
-  dateExpiration       DateTime?
-  niveau               String?        // débutant, confirmé, expert
-  numeroDiplome        String?
-  organismeDelivrance  String?
-  actif                Boolean        @default(true)
-  createdAt            DateTime       @default(now())
-  
-  // Relations
-  personnel            Personnel      @relation(fields: [personnelId], references: [id], onDelete: Cascade)
-  typeCompetence       TypeCompetence @relation(fields: [typeCompetenceId], references: [id])
-  
-  @@unique([personnelId, typeCompetenceId, dateObtention])
-  @@index([dateExpiration])
-}
-
-model AptitudeMedicale {
-  id                   Int            @id @default(autoincrement())
-  personnelId          Int
-  dateVisite           DateTime
-  dateProchaineVisite  DateTime?
-  aptitude             StatutAptitude
-  restrictions         String?
-  medecin              String?
-  commentaires         String?
-  createdAt            DateTime       @default(now())
-  
-  // Relations
-  personnel            Personnel      @relation(fields: [personnelId], references: [id], onDelete: Cascade)
-  
-  @@index([personnelId])
-  @@index([dateProchaineVisite])
-}
-
-// =====================================================
-// DOMAINE: FMPA (Formation Maintien Perfectionnement Acquis)
-// =====================================================
-
-model TypeFMPA {
-  id               Int           @id @default(autoincrement())
-  code             String        @unique
-  libelle          String
-  dureeHeures      Float
-  obligatoire      Boolean       @default(false)
-  periodiciteMois  Int?          // Fréquence de recyclage
-  description      String?
-  actif            Boolean       @default(true)
-  
-  // Relations
-  sessions         SessionFMPA[]
-  
-  @@index([code])
-}
-
-model SessionFMPA {
-  id                   Int                      @id @default(autoincrement())
-  typeFMPAId           Int
-  centreId             Int?
-  dateDebut            DateTime
-  dateFin              DateTime
-  lieu                 String?
-  nombrePlacesMax      Int?
-  nombreInscrits       Int                      @default(0)
-  formateurPrincipalId Int
-  statut               StatutSession            @default(PLANIFIE)
-  codeTTA              String?
-  tauxHoraire          Float?
-  commentaires         String?
-  createdAt            DateTime                 @default(now())
-  updatedAt            DateTime                 @updatedAt
-  
-  // Relations
-  typeFMPA             TypeFMPA                 @relation(fields: [typeFMPAId], references: [id])
-  centre               Centre?                  @relation(fields: [centreId], references: [id])
-  formateurPrincipal   Personnel                @relation("FormateurPrincipal", fields: [formateurPrincipalId], references: [id])
-  formateursAdditionnels SessionFMPAFormateur[]
-  inscriptions         InscriptionFMPA[]
-  signatures           SignatureFMPA[]
-  exportsTTA           ExportTTA[]
-  
-  @@index([dateDebut, dateFin])
-  @@index([centreId])
-  @@index([statut])
-}
-
-model SessionFMPAFormateur {
-  sessionId    Int
-  personnelId  Int
-  
-  // Relations
-  session      SessionFMPA @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  personnel    Personnel   @relation(fields: [personnelId], references: [id])
-  
-  @@id([sessionId, personnelId])
-}
-
-model InscriptionFMPA {
-  id                    Int               @id @default(autoincrement())
-  sessionFMPAId         Int
-  personnelId           Int
-  dateInscription       DateTime          @default(now())
-  statutInscription     StatutInscription @default(INSCRIT)
-  heureArrivee          DateTime?
-  heureDepart           DateTime?
-  signatureElectronique String?           // Base64
-  dateSignature         DateTime?
-  noteEvaluation        Float?
-  acquis                Boolean?
-  commentaireFormateur  String?
-  heuresValidees        Float?
-  montantTTA            Float?
-  exportePaie           Boolean           @default(false)
-  dateExportPaie        DateTime?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  
-  // Relations
-  session               SessionFMPA       @relation(fields: [sessionFMPAId], references: [id], onDelete: Cascade)
-  personnel             Personnel         @relation(fields: [personnelId], references: [id])
-  
-  @@unique([sessionFMPAId, personnelId])
-  @@index([personnelId])
-  @@index([statutInscription])
-}
-
-model SignatureFMPA {
-  id            String      @id @default(uuid())
-  sessionFMPAId Int
-  personnelId   Int
-  type          String      // EMARGEMENT, FORMATEUR, etc.
-  signature     String      // Base64
-  dateSignature DateTime    @default(now())
-  
-  // Relations
-  session       SessionFMPA @relation(fields: [sessionFMPAId], references: [id], onDelete: Cascade)
-  personnel     Personnel   @relation(fields: [personnelId], references: [id])
-  
-  @@index([sessionFMPAId])
-  @@index([personnelId])
-}
-
-// =====================================================
-// DOMAINE: GESTION DES MATÉRIELS
-// =====================================================
-
-model CategorieMateriel {
-  id          Int        @id @default(autoincrement())
-  code        String     @unique
-  libelle     String
-  description String?
-  actif       Boolean    @default(true)
-  
-  // Relations
-  materiels   Materiel[]
-}
-
-model Materiel {
-  id                      Int                @id @default(autoincrement())
-  categorieId             Int
-  centreId                Int?
-  codeInventaire          String             @unique
-  libelle                 String
-  marque                  String?
-  modele                  String?
-  numeroSerie             String?
-  dateAcquisition         DateTime?
-  dateMiseService         DateTime?
-  dateReforme             DateTime?
-  etat                    EtatMateriel       @default(OPERATIONNEL)
-  periodiciteControleJours Int?
-  dateDernierControle     DateTime?
-  dateProchainControle    DateTime?
-  localisation            String?
-  responsableId           Int?
-  valeurAchat             Float?
-  fournisseur             String?
-  numeroMarche            String?
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @updatedAt
-  
-  // Relations
-  categorie               CategorieMateriel  @relation(fields: [categorieId], references: [id])
-  centre                  Centre?            @relation(fields: [centreId], references: [id])
-  responsable             Personnel?         @relation(fields: [responsableId], references: [id])
-  incidents               IncidentMateriel[]
-  
-  @@index([centreId])
-  @@index([etat])
-  @@index([dateProchainControle])
-}
-
-model IncidentMateriel {
-  id                 Int             @id @default(autoincrement())
-  materielId         Int
-  signaleParId       Int
-  dateIncident       DateTime        @default(now())
-  typeIncident       TypeIncident
-  gravite            GraviteIncident
-  description        String
-  photosUrls         String[]
-  statut             StatutIncident  @default(SIGNALE)
-  traiteParId        Int?
-  dateResolution     DateTime?
-  actionsCorrectives String?
-  coutReparation     Float?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  
-  // Relations
-  materiel           Materiel        @relation(fields: [materielId], references: [id], onDelete: Cascade)
-  signalePar         Personnel       @relation("SignalePar", fields: [signaleParId], references: [id])
-  traitePar          Personnel?      @relation("TraitePar", fields: [traiteParId], references: [id])
-  
-  @@index([materielId])
-  @@index([statut])
-}
-
-// =====================================================
-// DOMAINE: EPI (Équipements Protection Individuelle)
-// =====================================================
-
-model EPI {
-  id                   Int       @id @default(autoincrement())
-  personnelId          Int
-  typeEPI              String    // casque, veste, pantalon, etc.
-  taille               String?
-  numeroSerie          String?
-  dateAttribution      DateTime
-  datePeremption       DateTime?
-  etat                 EtatEPI   @default(NEUF)
-  dateDernierControle  DateTime?
-  dateProchainControle DateTime?
-  actif                Boolean   @default(true)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  
-  // Relations
-  personnel            Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
-  
-  @@index([personnelId])
-  @@index([dateProchainControle])
-}
-
-// =====================================================
-// DOMAINE: COMMUNICATION ET MESSAGERIE
-// =====================================================
-
-model Conversation {
-  id           Int                       @id @default(autoincrement())
-  type         TypeConversation
-  nom          String?                   // Pour les groupes
-  createdById  Int
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
-  
-  // Relations
-  createdBy    Personnel                 @relation(fields: [createdById], references: [id])
-  participants ConversationParticipant[]
-  messages     Message[]
-}
-
-model ConversationParticipant {
-  conversationId       Int
-  personnelId          Int
-  dateAjout            DateTime         @default(now())
-  dateSortie           DateTime?
-  role                 RoleConversation @default(MEMBRE)
-  notificationsActives Boolean          @default(true)
-  
-  // Relations
-  conversation         Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  personnel            Personnel        @relation(fields: [personnelId], references: [id], onDelete: Cascade)
-  
-  @@id([conversationId, personnelId])
-}
-
-model Message {
-  id                  Int          @id @default(autoincrement())
-  conversationId      Int
-  expediteurId        Int
-  contenu             String
-  typeMessage         TypeMessage  @default(TEXTE)
-  fichierUrl          String?
-  typeInteractif      String?      // invitation_fmpa, sondage, etc.
-  donneesInteractives Json?
-  createdAt           DateTime     @default(now())
-  editedAt            DateTime?
-  deletedAt           DateTime?
-  
-  // Relations
-  conversation        Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  expediteur          Personnel    @relation(fields: [expediteurId], references: [id])
-  messagesLus         MessageLu[]
-  
-  @@index([conversationId])
-  @@index([createdAt])
-}
-
-model MessageLu {
-  messageId    Int
-  personnelId  Int
-  dateLecture  DateTime  @default(now())
-  
-  // Relations
-  message      Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  personnel    Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
-  
-  @@id([messageId, personnelId])
-}
-
-// =====================================================
-// DOMAINE: NOTIFICATIONS
-// =====================================================
-
-model Notification {
-  id                     Int                @id @default(autoincrement())
-  destinataireId         Int
-  typeNotification       String             // fmpa_rappel, aptitude_expiration, etc.
-  titre                  String
-  message                String
-  niveau                 NiveauNotification @default(INFO)
-  entiteType             String?            // fmpa, materiel, aptitude, etc.
-  entiteId               Int?
-  donneesSupplementaires Json?
-  lue                    Boolean            @default(false)
-  dateLecture            DateTime?
-  envoyeePush            Boolean            @default(false)
-  envoyeeEmail           Boolean            @default(false)
-  createdAt              DateTime           @default(now())
-  expiresAt              DateTime?
-  
-  // Relations
-  destinataire           Personnel          @relation(fields: [destinataireId], references: [id], onDelete: Cascade)
-  
-  @@index([destinataireId, lue])
-  @@index([createdAt])
-}
-
-// =====================================================
-// DOMAINE: AGENDA ET ÉVÉNEMENTS
-// =====================================================
-
-model Evenement {
-  id                Int                     @id @default(autoincrement())
-  createurId        Int
-  centreId          Int?
-  titre             String
-  description       String?
-  lieu              String?
-  dateDebut         DateTime
-  dateFin           DateTime
-  journeeEntiere    Boolean                 @default(false)
-  typeEvenement     String?                 // reunion, ceremonie, manoeuvre, etc.
-  visibilite        VisibiliteEvenement     @default(PUBLIC)
-  recurrent         Boolean                 @default(false)
-  patternRecurrence Json?                   // Règles de récurrence (RFC 5545)
-  couleur           String?                 // Code couleur hex
-  rappels           Json                    @default("[]")
-  annule            Boolean                 @default(false)
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  
-  // Relations
-  createur          Personnel               @relation(fields: [createurId], references: [id])
-  centre            Centre?                 @relation(fields: [centreId], references: [id])
-  participants      EvenementParticipant[]
-  
-  @@index([dateDebut, dateFin])
-  @@index([centreId])
-}
-
-model EvenementParticipant {
-  evenementId      Int
-  personnelId      Int
-  statutInvitation StatutInvitation @default(INVITE)
-  obligatoire      Boolean          @default(false)
-  dateReponse      DateTime?
-  commentaire      String?
-  
-  // Relations
-  evenement        Evenement        @relation(fields: [evenementId], references: [id], onDelete: Cascade)
-  personnel        Personnel        @relation(fields: [personnelId], references: [id], onDelete: Cascade)
-  
-  @@id([evenementId, personnelId])
-}
-
-// =====================================================
-// DOMAINE: EXPORTS ET INTÉGRATIONS
-// =====================================================
-
-model ExportTTA {
-  id              Int          @id @default(autoincrement())
-  periodeDebut    DateTime
-  periodeFin      DateTime
-  centreId        Int?
-  genereParId     Int
-  dateGeneration  DateTime     @default(now())
-  nombreLignes    Int?
-  montantTotal    Float?
-  fichierUrl      String?
-  formatExport    FormatExport
-  statut          StatutExport @default(GENERE)
-  dateValidation  DateTime?
-  valideParId     Int?
-  dateTransmission DateTime?
-  numeroBordereau String?
-  commentaires    String?
-  sessionId       Int?
-  
-  // Relations
-  centre          Centre?      @relation(fields: [centreId], references: [id])
-  generePar       Personnel    @relation("GenerePar", fields: [genereParId], references: [id])
-  validePar       Personnel?   @relation("ValidePar", fields: [valideParId], references: [id])
-  session         SessionFMPA? @relation(fields: [sessionId], references: [id])
-  
-  @@index([periodeDebut, periodeFin])
-  @@index([centreId])
-}
-
-// =====================================================
-// DOMAINE: AUDIT ET LOGS
-// =====================================================
-
-model AuditLog {
-  id               String    @id @default(uuid())
-  utilisateurId    Int?
-  action           String    // CREATE, UPDATE, DELETE, LOGIN, etc.
-  entiteType       String    // personnel, fmpa, materiel, etc.
-  entiteId         Int?
-  anciennesValeurs Json?
-  nouvellesValeurs Json?
-  ipAddress        String?
-  userAgent        String?
-  createdAt        DateTime  @default(now())
-  
-  // Relations
-  utilisateur      Personnel? @relation(fields: [utilisateurId], references: [id])
-  
-  @@index([utilisateurId])
-  @@index([entiteType, entiteId])
-  @@index([createdAt])
 }

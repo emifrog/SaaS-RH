@@ -19,10 +19,21 @@ export const updateSessionSchema = createSessionSchema.partial().extend({
 });
 
 export const querySessionsSchema = z.object({
+  // Filtres de base
   mois: z.string().optional(),
+  dateDebut: z.string().optional(),
+  dateFin: z.string().optional(),
   centreId: z.string().optional(),
   statut: z.nativeEnum(StatutSession).optional(),
   formateurId: z.string().optional(),
+  typeFMPAId: z.string().optional(),
+  statutInscription: z.nativeEnum(StatutInscription).optional(),
+  
+  // Tri et pagination
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+  page: z.string().optional(),
+  pageSize: z.string().optional(),
 });
 
 export const inscriptionSchema = z.object({
@@ -37,7 +48,8 @@ export const presenceSchema = z.object({
 });
 
 export const exportTTASchema = z.object({
-  mois: z.string().regex(/^\d{4}-\d{2}$/),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide (AAAA-MM-JJ)'),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide (AAAA-MM-JJ)'),
   centreId: z.string().optional(),
 });
 

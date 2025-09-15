@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const loginSchema = z.object({
   matricule: z.string().min(1, 'Matricule requis'),
-  password: z.string().min(6, 'Mot de passe requis'),
+  password: z.string().min(1, 'Mot de passe requis'),
 });
 
 export const refreshTokenSchema = z.object({

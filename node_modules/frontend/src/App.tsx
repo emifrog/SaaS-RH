@@ -8,6 +8,7 @@ import Dashboard from '@/pages/Dashboard';
 import SessionsFMPA from '@/pages/fmpa/SessionsFMPA';
 import SessionDetail from '@/pages/fmpa/SessionDetail';
 import CreateSession from '@/pages/fmpa/CreateSession';
+import TTAExport from '@/pages/fmpa/TTAExport';
 import Layout from '@/components/Layout';
 import PrivateRoute from '@/components/PrivateRoute';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -48,6 +49,7 @@ function App() {
             <Route path="sessions/new" element={<CreateSession />} />
             <Route path="sessions/:id" element={<SessionDetail />} />
             <Route path="sessions/:id/edit" element={<CreateSession />} />
+            <Route path="export-tta" element={<TTAExport />} />
           </Route>
         </Route>
       </Route>

@@ -7,7 +7,7 @@ export class AuthController {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const data: LoginDTO = req.body;
-      const result = await authService.login(data);
+      const result = await authService.login(data, req);
       
       res.status(HTTP_STATUS.OK).json({
         success: true,
@@ -21,7 +21,7 @@ export class AuthController {
   async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
       const data: RefreshTokenDTO = req.body;
-      const tokens = await authService.refreshToken(data.refreshToken);
+      const tokens = await authService.refreshToken(data.refreshToken, req);
       
       res.status(HTTP_STATUS.OK).json({
         success: true,
@@ -61,7 +61,13 @@ export class AuthController {
 
   async getCurrentUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await authService.getCurrentUser(req.user!.userId);
+      // Retourner les informations utilisateur depuis le middleware
+      const user = {
+        id: req.user!.userId,
+        matricule: req.user!.matricule,
+        roles: req.user!.roles,
+        permissions: req.user!.permissions
+      };
       
       res.status(HTTP_STATUS.OK).json({
         success: true,

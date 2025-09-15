@@ -87,10 +87,10 @@ async function main() {
       email: 'admin@sdis06.fr',
       telephone: '0601020304',
       password: hashedPassword,
-      grade: 'COL',
       centreId: centres[0].id,
       categorie: 'SPP',
-      roles: ['ADMIN_SDIS', 'USER'],
+      statut: 'ACTIF',
+      dateEntree: new Date(),
       aptitudeMedicale: {
         create: {
           statut: 'APTE',
@@ -111,10 +111,10 @@ async function main() {
       email: 'chef.centre@sdis06.fr',
       telephone: '0601020305',
       password: hashedPassword,
-      grade: 'CNE',
       centreId: centres[0].id,
       categorie: 'SPP',
-      roles: ['CHEF_CENTRE', 'USER'],
+      statut: 'ACTIF',
+      dateEntree: new Date(),
       aptitudeMedicale: {
         create: {
           statut: 'APTE',
@@ -135,10 +135,10 @@ async function main() {
       email: 'formateur@sdis06.fr',
       telephone: '0601020306',
       password: hashedPassword,
-      grade: 'ADJ',
       centreId: centres[0].id,
       categorie: 'SPP',
-      roles: ['FORMATEUR', 'USER'],
+      statut: 'ACTIF',
+      dateEntree: new Date(),
       aptitudeMedicale: {
         create: {
           statut: 'APTE',
@@ -180,10 +180,10 @@ async function main() {
         email: 'marie.durand@sdis06.fr',
         telephone: '0601020307',
         password: hashedPassword,
-        grade: 'CAP',
         centreId: centres[0].id,
         categorie: 'SPV',
-        roles: ['USER'],
+        statut: 'ACTIF',
+        dateEntree: new Date(),
         aptitudeMedicale: {
           create: {
             statut: 'APTE',
@@ -214,10 +214,10 @@ async function main() {
         email: 'thomas.moreau@sdis06.fr',
         telephone: '0601020308',
         password: hashedPassword,
-        grade: 'SAP1',
         centreId: centres[1].id,
         categorie: 'SPV',
-        roles: ['USER'],
+        statut: 'ACTIF',
+        dateEntree: new Date(),
         aptitudeMedicale: {
           create: {
             statut: 'APTE',
@@ -236,10 +236,10 @@ async function main() {
         email: 'luis.garcia@sdis06.fr',
         telephone: '0601020309',
         password: hashedPassword,
-        grade: 'SGT',
         centreId: centres[0].id,
         categorie: 'SPV',
-        roles: ['USER'],
+        statut: 'ACTIF',
+        dateEntree: new Date(),
         aptitudeMedicale: {
           create: {
             statut: 'APTE',
